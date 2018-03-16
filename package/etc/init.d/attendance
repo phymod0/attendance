@@ -1,0 +1,34 @@
+#!/bin/sh /etc/rc.common
+
+START=51
+STOP=52
+
+start() {
+
+#	killall uhttpd
+
+	tar -xvzf /root/www.tar.gz -C /tmp/
+	chmod 777 /tmp/www/*.cgi
+	chmod 777 /root/attendance-tools-servers/db-server
+	chmod 777 /root/attendance-tools-servers/as-server
+
+	/usr/sbin/uhttpd -p 192.168.52.1:6115 -h /tmp/www/ -x /
+
+	/root/attendance-tools-servers/db-server 127.0.0.1 2345 &
+	/root/attendance-tools-servers/as-server 5432 &
+
+	iptables \
+		-t nat -A PREROUTING \
+		-p tcp -m multiport --dport 80,443 \
+		-j REDIRECT --to-port 6115
+
+}
+
+stop() {
+
+	killall uhttpd
+
+}
+
+
+
